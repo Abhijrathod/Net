@@ -1,0 +1,62 @@
+# Build DNS Changer and create Windows installer + GitHub Release
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          vs-version: '[17.0,18.0)'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build C++ DLL
+        run: |
+          cd cpp_core
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 17 2022" -A x64
+          cmake --build . --config Release
+          cd ../..
+
+      - name: Copy DLL to WPF project
+        run: |
+          copy cpp_core\build\bin\Release\dns_core.dll windows_gui\dns_core.dll
+
+      - name: Publish WPF Application
+        run: |
+          cd windows_gui
+          dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:IncludeNativeLibrariesForSelfExtract=true -o ..\publish\DNSChanger
+          cd ..
+          copy windows_gui\dns_core.dll publish\DNSChanger\dns_core.dll
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Build Installer with version
+        run: |
+          $tag = "${{ env.GITHUB_REF_NAME }}"
+          $ver = $tag -replace '^v',''
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$ver" installer.iss
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*.exe
+          generate_release_notes: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

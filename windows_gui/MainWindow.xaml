@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:DNSChanger.ViewModels"
         xmlns:conv="clr-namespace:DNSChanger.Converters"
+        xmlns:views="clr-namespace:DNSChanger.Views"
         mc:Ignorable="d"
         Title="DNS Changer" 
         Height="700" 
@@ -17,6 +18,8 @@
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <conv:BoolToColorConverter x:Key="BoolToColorConverter"/>
         <conv:OpacityConverter x:Key="OpacityConverter"/>
+        <conv:LatencyColorConverter x:Key="LatencyColorConverter"/>
+        <conv:TestButtonTextConverter x:Key="TestButtonTextConverter"/>
     </Window.Resources>
     
     <Window.DataContext>
@@ -80,48 +83,51 @@
                               Text="Network Adapters" 
                               Style="{StaticResource HeaderText}"/>
                     
-                    <ListBox Grid.Row="1"
-                            ItemsSource="{Binding Networks}"
-                            SelectedItem="{Binding SelectedNetwork}"
-                            Style="{StaticResource ModernListBox}">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource ModernListBoxItem}"/>
-                        </ListBox.ItemContainerStyle>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Name}" 
-                                              FontWeight="SemiBold"
-                                              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/>
-                                    <TextBlock Text="{Binding Type}" 
-                                              FontSize="12"
-                                              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                              Opacity="0.7"
-                                              Margin="0,4,0,0"/>
-                                    <TextBlock Text="{Binding IpAddress}" 
-                                              FontSize="11"
-                                              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                              Opacity="0.6"
-                                              Margin="0,2,0,0"/>
-                                    <TextBlock Text="{Binding DnsPrimary}" 
-                                              FontSize="11"
-                                              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                              Opacity="0.6"
-                                              Margin="0,2,0,0"/>
-                                    <Border Background="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" 
-                                           CornerRadius="10"
-                                           Padding="6,2"
-                                           HorizontalAlignment="Left"
-                                           Margin="0,4,0,0">
-                                        <TextBlock Text="{Binding StatusBadge}" 
-                                                  FontSize="10"
-                                                  Foreground="White"
-                                                  FontWeight="SemiBold"/>
-                                    </Border>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ListBox ItemsSource="{Binding Networks}"
+                                SelectedItem="{Binding SelectedNetwork}"
+                                Style="{StaticResource ModernListBox}"
+                                BorderThickness="0">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource ModernListBoxItem}"/>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="8">
+                                        <TextBlock Text="{Binding Name}" 
+                                                  FontWeight="SemiBold"
+                                                  FontSize="14"
+                                                  Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/>
+                                        <TextBlock Text="{Binding Type}" 
+                                                  FontSize="12"
+                                                  Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                                  Opacity="0.7"
+                                                  Margin="0,4,0,0"/>
+                                        <TextBlock Text="{Binding IpAddress}" 
+                                                  FontSize="11"
+                                                  Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                                  Opacity="0.6"
+                                                  Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding DnsPrimary}" 
+                                                  FontSize="11"
+                                                  Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                                  Opacity="0.6"
+                                                  Margin="0,2,0,0"/>
+                                        <Border Background="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" 
+                                               CornerRadius="10"
+                                               Padding="6,2"
+                                               HorizontalAlignment="Left"
+                                               Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding StatusBadge}" 
+                                                      FontSize="10"
+                                                      Foreground="White"
+                                                      FontWeight="SemiBold"/>
+                                        </Border>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </ScrollViewer>
                 </Grid>
             </Border>
             
@@ -139,9 +145,110 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     
-                    <TextBlock Grid.Row="0" 
-                              Text="DNS Servers" 
-                              Style="{StaticResource HeaderText}"/>
+                    <Grid Grid.Row="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                      Text="DNS Servers" 
+                                      Style="{StaticResource HeaderText}"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <TextBox Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                                       Width="200"
+                                       Height="30"
+                                       Padding="8,4"
+                                       Background="{StaticResource BackgroundMediumBrush}"
+                                       Foreground="{StaticResource ForegroundPrimaryBrush}"
+                                       BorderBrush="{StaticResource BorderBrush}"
+                                       BorderThickness="1"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"
+                                       Margin="0,0,8,0">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="TextBox">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                               BorderBrush="{TemplateBinding BorderBrush}"
+                                                               BorderThickness="{TemplateBinding BorderThickness}"
+                                                               CornerRadius="4"
+                                                               Padding="{TemplateBinding Padding}">
+                                                            <ScrollViewer x:Name="PART_ContentHost"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                                <Button Content="➕ Add" 
+                                       Command="{Binding AddCustomDnsCommand}"
+                                       Style="{StaticResource ModernButton}"
+                                       Width="80"
+                                       Height="30"
+                                       Padding="8,4"/>
+                            </StackPanel>
+                        </Grid>
+                        <!-- Category Filter Buttons -->
+                        <StackPanel Grid.Row="1" 
+                                   Orientation="Horizontal" 
+                                   Margin="0,0,0,12">
+                            <Button Content="All" 
+                                   Command="{Binding FilterCategoryCommand}"
+                                   CommandParameter="All"
+                                   Style="{StaticResource ModernButton}"
+                                   Width="70"
+                                   Height="28"
+                                   Padding="8,4"
+                                   Margin="0,0,8,0"/>
+                            <Button Content="Public" 
+                                   Command="{Binding FilterCategoryCommand}"
+                                   CommandParameter="Public"
+                                   Style="{StaticResource ModernButton}"
+                                   Width="70"
+                                   Height="28"
+                                   Padding="8,4"
+                                   Margin="0,0,8,0"/>
+                            <Button Content="Privacy" 
+                                   Command="{Binding FilterCategoryCommand}"
+                                   CommandParameter="Privacy"
+                                   Style="{StaticResource ModernButton}"
+                                   Width="70"
+                                   Height="28"
+                                   Padding="8,4"
+                                   Margin="0,0,8,0"/>
+                            <Button Content="Family" 
+                                   Command="{Binding FilterCategoryCommand}"
+                                   CommandParameter="Family"
+                                   Style="{StaticResource ModernButton}"
+                                   Width="70"
+                                   Height="28"
+                                   Padding="8,4"
+                                   Margin="0,0,8,0"/>
+                            <Button Content="Custom" 
+                                   Command="{Binding FilterCategoryCommand}"
+                                   CommandParameter="Custom"
+                                   Style="{StaticResource ModernButton}"
+                                   Width="70"
+                                   Height="28"
+                                   Padding="8,4"
+                                   Margin="0,0,8,0"/>
+                            <Button Content="⭐ Favorites" 
+                                   Command="{Binding FilterCategoryCommand}"
+                                   CommandParameter="Favorites"
+                                   Style="{StaticResource ModernButton}"
+                                   Width="90"
+                                   Height="28"
+                                   Padding="8,4"/>
+                        </StackPanel>
+                    </Grid>
                     
                     <!-- Progress Bar -->
                     <ProgressBar Grid.Row="1"
@@ -151,39 +258,49 @@
                                  Visibility="{Binding IsTesting, Converter={StaticResource BoolToVisibilityConverter}}"
                                  Margin="0,0,0,12"/>
                     
-                    <DataGrid Grid.Row="2"
-                             ItemsSource="{Binding DnsServers}"
-                             SelectedItem="{Binding SelectedDns}"
-                             Style="{StaticResource ModernDataGrid}"
-                             SelectionMode="Single"
-                             SelectionChanged="DataGrid_SelectionChanged">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Provider" 
-                                               Binding="{Binding Provider}" 
-                                               Width="150"/>
-                            <DataGridTextColumn Header="Primary DNS" 
-                                               Binding="{Binding Primary}" 
-                                               Width="140"/>
-                            <DataGridTextColumn Header="Secondary DNS" 
-                                               Binding="{Binding Secondary}" 
-                                               Width="140"/>
-                            <DataGridTextColumn Header="Latency" 
-                                               Binding="{Binding LatencyDisplay}" 
-                                               Width="100"/>
-                            <DataGridTextColumn Header="Packet Loss" 
-                                               Binding="{Binding PacketLossDisplay}" 
-                                               Width="100"/>
-                            <DataGridTextColumn Header="Stability" 
-                                               Binding="{Binding StabilityDisplay}" 
-                                               Width="100"/>
-                        </DataGrid.Columns>
-                        <DataGrid.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Copy DNS" 
-                                         Command="{Binding CopyDnsCommand}"/>
-                            </ContextMenu>
-                        </DataGrid.ContextMenu>
-                    </DataGrid>
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <DataGrid ItemsSource="{Binding DnsServers}"
+                                 SelectedItem="{Binding SelectedDns}"
+                                 Style="{StaticResource ModernDataGrid}"
+                                 SelectionMode="Single"
+                                 SelectionChanged="DataGrid_SelectionChanged"
+                                 BorderThickness="0">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Provider" 
+                                                   Binding="{Binding Provider}" 
+                                                   Width="150"/>
+                                <DataGridTextColumn Header="Primary DNS" 
+                                                   Binding="{Binding Primary}" 
+                                                   Width="140"/>
+                                <DataGridTextColumn Header="Secondary DNS" 
+                                                   Binding="{Binding Secondary}" 
+                                                   Width="140"/>
+                                <DataGridTextColumn Header="Latency" 
+                                                   Binding="{Binding LatencyDisplay}" 
+                                                   Width="100">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{Binding AvgLatencyMs, Converter={StaticResource LatencyColorConverter}}"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Packet Loss" 
+                                                   Binding="{Binding PacketLossDisplay}" 
+                                                   Width="100"/>
+                                <DataGridTextColumn Header="Stability" 
+                                                   Binding="{Binding StabilityDisplay}" 
+                                                   Width="100"/>
+                            </DataGrid.Columns>
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Copy DNS" 
+                                             Command="{Binding CopyDnsCommand}"/>
+                                    <MenuItem Header="Resolve Domain..." 
+                                             Command="{Binding ResolveDomainCommand}"/>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
+                        </DataGrid>
+                    </ScrollViewer>
                 </Grid>
             </Border>
         </Grid>
@@ -194,22 +311,67 @@
                BorderBrush="{StaticResource BorderBrush}"
                BorderThickness="0,1,0,0"
                Padding="20,16">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Run Speed Test" 
-                       Command="{Binding RunSpeedTestCommand}"
-                       Style="{StaticResource ModernButton}"
-                       Margin="0,0,8,0"
-                       Width="140"/>
-                <Button Content="Apply DNS" 
-                       Command="{Binding ApplyDnsCommand}"
-                       Style="{StaticResource ModernButton}"
-                       Margin="0,0,8,0"
-                       Width="120"/>
-                <Button Content="Restore Default" 
-                       Command="{Binding RestoreDefaultCommand}"
-                       Style="{StaticResource ModernButton}"
-                       Width="140"/>
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Left: DNS Resolver -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Resolve:" 
+                              Foreground="{StaticResource ForegroundSecondaryBrush}"
+                              VerticalAlignment="Center"
+                              Margin="0,0,8,0"/>
+                    <TextBox Text="{Binding ResolveDomain, UpdateSourceTrigger=PropertyChanged}"
+                           Width="200"
+                           Height="30"
+                           Padding="8,4"
+                           Background="{StaticResource BackgroundLightBrush}"
+                           Foreground="{StaticResource ForegroundPrimaryBrush}"
+                           BorderBrush="{StaticResource BorderBrush}"
+                           BorderThickness="1"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           FontSize="12"/>
+                    <Button Content="Resolve" 
+                           Command="{Binding ResolveDomainCommand}"
+                           Style="{StaticResource ModernButton}"
+                           Width="80"
+                           Height="30"
+                           Padding="8,4"/>
+                </StackPanel>
+                
+                <!-- Right: Action Buttons -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Flush Cache" 
+                           Command="{Binding FlushDnsCacheCommand}"
+                           Style="{StaticResource ModernButton}"
+                           Margin="0,0,8,0"
+                           Width="100"/>
+                    <Button Content="{Binding IsTesting, Converter={StaticResource TestButtonTextConverter}}" 
+                           Command="{Binding RunSpeedTestCommand}"
+                           CommandParameter="{Binding IsTesting}"
+                           Style="{StaticResource ModernButton}"
+                           Margin="0,0,8,0"
+                           Width="140"/>
+                    <Button Content="Cancel" 
+                           Command="{Binding CancelSpeedTestCommand}"
+                           Style="{StaticResource ModernButton}"
+                           Margin="0,0,8,0"
+                           Width="80"
+                           Visibility="{Binding IsTesting, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <Button Content="Apply DNS" 
+                           Command="{Binding ApplyDnsCommand}"
+                           Style="{StaticResource ModernButton}"
+                           Margin="0,0,8,0"
+                           Width="120"/>
+                    <Button Content="Restore Default" 
+                           Command="{Binding RestoreDefaultCommand}"
+                           Style="{StaticResource ModernButton}"
+                           Width="140"/>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </Window>

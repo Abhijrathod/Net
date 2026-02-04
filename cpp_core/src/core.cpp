@@ -3,6 +3,7 @@
 #include "../include/dns_catalog.h"
 #include "../include/dns_latency.h"
 #include "../include/dns_apply_windows.h"
+#include "../include/dns_resolver.h"
 #include "../include/json_serializer.h"
 #include "../include/logger.h"
 
@@ -29,4 +30,12 @@ bool Core::RestoreDefaultDns(const std::string& interfaceGuid) {
 
 void Core::AddCustomDnsServer(const DnsServer& server) {
     DnsCatalog::AddCustomServer(server);
+}
+
+std::vector<std::string> Core::ResolveDomain(const std::string& domain, const std::string& dnsServer) {
+    return DnsResolver::Resolve(domain, dnsServer);
+}
+
+bool Core::FlushDnsCache() {
+    return DnsResolver::FlushCache();
 }

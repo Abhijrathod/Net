@@ -37,14 +37,42 @@ const char* list_dns_servers_json() {
 const char* test_dns_speed_json() {
     try {
         Logger::GetInstance().Info("Starting DNS speed test...");
-        auto results = Core::TestDnsSpeed(5, 3000); // 5 tests per server, 3 second timeout
+        auto results = Core::TestDnsSpeed(3, 2000); // 3 tests per server, 2 second timeout (faster)
         g_lastJsonResponse = JsonSerializer::DnsTestResultsToJson(results);
-        Logger::GetInstance().Info("DNS speed test completed");
+        Logger::GetInstance().Info("DNS speed test completed - " + std::to_string(results.size()) + " results");
         return g_lastJsonResponse.c_str();
     } catch (const std::exception& e) {
         Logger::GetInstance().Error("Error in test_dns_speed_json: " + std::string(e.what()));
         g_lastJsonResponse = "[]";
         return g_lastJsonResponse.c_str();
+    }
+}
+
+const char* resolve_domain_json(const char* domain, const char* dnsServer) {
+    try {
+        if (!domain || !dnsServer) {
+            Logger::GetInstance().Error("Invalid parameters for resolve_domain_json");
+            g_lastJsonResponse = "[]";
+            return g_lastJsonResponse.c_str();
+        }
+        
+        Logger::GetInstance().Info("Resolving " + std::string(domain) + " using " + std::string(dnsServer));
+        auto ips = Core::ResolveDomain(domain, dnsServer);
+        g_lastJsonResponse = JsonSerializer::IpListToJson(ips);
+        return g_lastJsonResponse.c_str();
+    } catch (const std::exception& e) {
+        Logger::GetInstance().Error("Error in resolve_domain_json: " + std::string(e.what()));
+        g_lastJsonResponse = "[]";
+        return g_lastJsonResponse.c_str();
+    }
+}
+
+bool flush_dns_cache() {
+    try {
+        return Core::FlushDnsCache();
+    } catch (const std::exception& e) {
+        Logger::GetInstance().Error("Error in flush_dns_cache: " + std::string(e.what()));
+        return false;
     }
 }
 

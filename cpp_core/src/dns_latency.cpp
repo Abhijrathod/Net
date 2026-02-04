@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <numeric>
 #include <cmath>
+#include <mutex>
 
 DnsTestResult DnsLatencyTester::TestServer(const DnsServer& server, int testCount, int timeoutMs) {
     DnsTestResult result;
@@ -74,9 +75,21 @@ std::vector<DnsTestResult> DnsLatencyTester::TestServers(const std::vector<DnsSe
     std::vector<DnsTestResult> results;
     results.reserve(servers.size());
     
+    // Parallel testing using threads
+    std::vector<std::thread> threads;
+    std::mutex resultsMutex;
+    
     for (const auto& server : servers) {
-        DnsTestResult result = TestServer(server, testCount, timeoutMs);
-        results.push_back(result);
+        threads.emplace_back([&server, testCount, timeoutMs, &results, &resultsMutex]() {
+            DnsTestResult result = TestServer(server, testCount, timeoutMs);
+            std::lock_guard<std::mutex> lock(resultsMutex);
+            results.push_back(result);
+        });
+    }
+    
+    // Wait for all threads to complete
+    for (auto& thread : threads) {
+        thread.join();
     }
     
     // Sort by average latency

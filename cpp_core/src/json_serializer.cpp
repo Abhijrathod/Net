@@ -87,3 +87,14 @@ std::string JsonSerializer::DnsTestResultsToJson(const std::vector<DnsTestResult
     json << "]";
     return json.str();
 }
+
+std::string JsonSerializer::IpListToJson(const std::vector<std::string>& ips) {
+    std::ostringstream json;
+    json << "[";
+    for (size_t i = 0; i < ips.size(); ++i) {
+        if (i > 0) json << ",";
+        json << "\"" << EscapeJson(ips[i]) << "\"";
+    }
+    json << "]";
+    return json.str();
+}

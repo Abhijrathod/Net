@@ -24,6 +24,7 @@ set(SOURCES
     src/dns_packet.cpp
     src/dns_statistics.cpp
     src/dns_apply_windows.cpp
+    src/dns_resolver.cpp
     src/json_serializer.cpp
     src/logger.cpp
     src/utils.cpp

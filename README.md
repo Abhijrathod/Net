@@ -180,6 +180,41 @@ Run with:
 .\build.ps1
 ```
 
+## Releases and Windows Installer
+
+### Download the installer (recommended)
+
+1. Go to [Releases](https://github.com/Abhijrathod/Net/releases).
+2. Download the latest **DNSChanger-Setup-x.x.x.exe**.
+3. Run the installer (you may need to approve UAC).
+4. Launch **DNS Changer** from the Start menu or desktop. **Run as administrator** when changing DNS.
+
+### Creating a new release on GitHub
+
+1. **Create a release build and installer locally** (optional, for testing):
+   ```powershell
+   .\build-release.ps1 -Version "1.0.0"
+   ```
+   Then install [Inno Setup 6](https://jrsoftware.org/isinfo.php) and build the installer:
+   ```powershell
+   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+   ```
+   The installer will be in the `release\` folder.
+
+2. **Publish a release via GitHub** (creates the installer automatically):
+   - Create and push a version tag, e.g. `v1.0.0`:
+     ```powershell
+     git tag v1.0.0
+     git push origin v1.0.0
+     ```
+   - The [Release workflow](.github/workflows/release.yml) will build the app and create **DNSChanger-Setup-1.0.0.exe** and attach it to the new release.
+
+### Installer contents
+
+- Installs to `C:\Program Files\DNS Changer\` (64-bit).
+- Adds Start menu and optional desktop shortcut.
+- Requires **Windows 10/11 64-bit** and **run as administrator** for DNS changes.
+
 ## Usage
 
 ### Running the Application

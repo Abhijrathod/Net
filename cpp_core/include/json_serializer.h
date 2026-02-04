@@ -11,4 +11,5 @@ public:
     static std::string NetworkListToJson(const NetworkList& list);
     static std::string DnsServerListToJson(const std::vector<DnsServer>& servers);
     static std::string DnsTestResultsToJson(const std::vector<DnsTestResult>& results);
+    static std::string IpListToJson(const std::vector<std::string>& ips);
 };

@@ -58,6 +58,14 @@ namespace DNSChanger.Services
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "free_dns_string")]
         public static extern void free_dns_string(IntPtr str);
 
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "resolve_domain_json")]
+        public static extern IntPtr resolve_domain_json([MarshalAs(UnmanagedType.LPStr)] string domain,
+                                                        [MarshalAs(UnmanagedType.LPStr)] string dnsServer);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "flush_dns_cache")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool flush_dns_cache();
+
         public static string GetJsonString(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)

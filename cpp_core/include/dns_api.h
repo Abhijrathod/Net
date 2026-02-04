@@ -25,6 +25,13 @@ DNS_API const char* list_dns_servers_json();
 // This may take several seconds
 DNS_API const char* test_dns_speed_json();
 
+// Resolve a domain name using a specific DNS server
+// Returns JSON with IP addresses
+DNS_API const char* resolve_domain_json(const char* domain, const char* dnsServer);
+
+// Flush DNS cache
+DNS_API bool flush_dns_cache();
+
 // Sets DNS servers for a network interface
 // interface_name: GUID or adapter name
 // dns1: Primary DNS server IP

@@ -80,6 +80,7 @@ out/
 temp/
 tmp/
 
-# Release artifacts (optional - uncomment if you want to commit releases)
-# Release/
-# x64/
+# Release artifacts
+publish/
+release/
+*.Setup*.exe
