@@ -1,0 +1,7 @@
+<!-- Shell.xaml - System Tray Integration -->
+<UserControl x:Class="DNSChanger.Shell"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Unloaded="Shell_Unloaded">
+    <!-- This will be implemented in Shell.xaml.cs for system tray functionality -->
+</UserControl>

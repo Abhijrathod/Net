@@ -1,0 +1,85 @@
+# Build directories
+bin/
+obj/
+build/
+dist/
+*.o
+*.a
+*.lib
+*.dll
+*.exe
+*.so
+*.dylib
+
+# Visual Studio
+.vs/
+*.sln.user
+*.vcxproj.user
+*.user
+*.opensdf
+*.sdf
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+*.vcxproj
+*.vcxproj.filters
+
+# C++ Specific
+*.pdb
+*.ilk
+*.map
+*.exp
+
+# C# Specific
+*.csproj.user
+appsettings.*.json
+
+# Dependencies
+packages/
+.nuget/
+*.nupkg
+node_modules/
+
+# IDE Specific
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS Specific
+Thumbs.db
+.DS_Store
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*~
+
+# NuGet restore
+.NuGet.Config
+.NuGet.Props
+.NuGet.targets
+
+# Local user-specific settings
+.vscode/launch.json
+.vscode/tasks.json
+
+# Output directories
+out/
+temp/
+tmp/
+
+# Release artifacts (optional - uncomment if you want to commit releases)
+# Release/
+# x64/
