@@ -3,7 +3,7 @@
 A Windows desktop application for managing DNS servers across your network adapters. Built with a high-performance C++20 core and a modern C# WPF interface.
 
 ---
-<img width="1478" height="865" alt="image" src="https://github.com/user-attachments/assets/a5df9f86-c83b-47d1-a24f-8539b13d49dc" />
+<img width="1478" height="907" alt="Screenshot 2026-02-04 165449" src="https://github.com/user-attachments/assets/4885774f-7deb-4492-b47a-2e3a75be55a6" />
 
 ## Architecture
 
