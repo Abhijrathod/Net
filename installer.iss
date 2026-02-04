@@ -2,6 +2,10 @@
 ; Build after running: .\build-release.ps1
 ; Or pass version: iscc /DMyAppVersion=1.0.0 installer.iss
 
+#if !exist("publish\DNSChanger\DNSChanger.exe")
+  #error "Run build-release.ps1 first to create publish\DNSChanger. From project root: .\build-release.ps1"
+#endif
+
 #ifndef MyAppVersion
 #define MyAppVersion "1.0.0"
 #endif
@@ -23,13 +27,10 @@ DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=release
 OutputBaseFilename=DNSChanger-Setup-{#MyAppVersion}
-SetupIconFile=
-Compression=lz2
+Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

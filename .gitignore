@@ -84,3 +84,46 @@ tmp/
 publish/
 release/
 *.Setup*.exe
+
+# --- Do not upload to GitHub (secrets, local-only, credentials) ---
+.env
+.env.*
+.env.local
+*.local
+secrets.*
+*.secret
+*.key
+*.pfx
+*.pem
+credentials*
+*.credentials
+appsettings.json
+connectionstrings.*
+*.token
+
+# User / machine-specific
+desktop.ini
+*.suo
+*.rsuser
+[Tt]humbs.db
+ehthumbs.db
+Desktop.ini
+
+# Local / cache
+.cache/
+*.cache
+*.log
+*.tmp
+*.temp
+.scratch/
+
+# Cursor / IDE local state (keep .md and source tracked)
+.cursor/
+*.cursorignore
+
+# Docs not for GitHub (internal / release notes)
+IMPROVEMENTS.md
+RELEASE.md
+FEATURE_ROADMAP.md
+QUICK_START.md
+TROUBLESHOOTING.md
