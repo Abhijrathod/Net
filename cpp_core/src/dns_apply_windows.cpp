@@ -6,6 +6,46 @@
 #include <iphlpapi.h>
 #include <sstream>
 #include <vector>
+#include <algorithm>
+#include <cctype>
+
+namespace {
+std::string NormalizeGuid(std::string guid) {
+    guid.erase(std::remove_if(guid.begin(), guid.end(), [](unsigned char ch) {
+        return std::isspace(ch);
+    }), guid.end());
+
+    if (!guid.empty() && guid.front() == '{' && guid.back() == '}') {
+        return guid;
+    }
+
+    return "{" + guid + "}";
+}
+
+std::wstring FindAdapterFriendlyName(const std::string& interfaceGuid) {
+    ULONG bufferSize = 0;
+    GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &bufferSize);
+    if (bufferSize == 0) {
+        return L"";
+    }
+
+    std::vector<unsigned char> buffer(bufferSize);
+    PIP_ADAPTER_ADDRESSES adapters = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(buffer.data());
+
+    if (GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapters, &bufferSize) != NO_ERROR) {
+        return L"";
+    }
+
+    const std::string normalizedGuid = NormalizeGuid(interfaceGuid);
+    for (auto* adapter = adapters; adapter != nullptr; adapter = adapter->Next) {
+        if (adapter->AdapterName && normalizedGuid == adapter->AdapterName && adapter->FriendlyName) {
+            return adapter->FriendlyName;
+        }
+    }
+
+    return L"";
+}
+}
 
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "netapi32.lib")
@@ -20,7 +60,8 @@ bool DnsManager::SetDns(const std::string& interfaceGuid, const std::string& dns
     
     // Try Windows SDK API first (Windows 10 1809+)
     GUID guid;
-    std::wstring guidWide = WinUtils::Utf8ToWide(interfaceGuid);
+    const std::string normalizedGuid = NormalizeGuid(interfaceGuid);
+    std::wstring guidWide = WinUtils::Utf8ToWide(normalizedGuid);
     HRESULT hr = CLSIDFromString(guidWide.c_str(), &guid);
     if (SUCCEEDED(hr)) {
         // Prepare DNS server addresses
@@ -54,8 +95,11 @@ bool DnsManager::SetDns(const std::string& interfaceGuid, const std::string& dns
     }
     
     // Fallback to netsh if SDK API fails or not available
+    std::wstring adapterName = FindAdapterFriendlyName(interfaceGuid);
+    std::wstring adapterSelector = adapterName.empty() ? guidWide : adapterName;
+
     std::wstringstream cmd;
-    cmd << L"interface ip set dns \"" << guidWide << L"\" static " << WinUtils::Utf8ToWide(dns1);
+    cmd << L"interface ipv4 set dnsservers name=\"" << adapterSelector << L"\" static " << WinUtils::Utf8ToWide(dns1) << L" primary";
     
     STARTUPINFOW si = {0};
     si.cb = sizeof(si);
@@ -78,7 +122,7 @@ bool DnsManager::SetDns(const std::string& interfaceGuid, const std::string& dns
             // Set secondary DNS if provided
             if (!dns2.empty()) {
                 std::wstringstream cmd2;
-                cmd2 << L"interface ip add dns \"" << guidWide << L"\" " << WinUtils::Utf8ToWide(dns2) << L" index=2";
+                cmd2 << L"interface ipv4 add dnsservers name=\"" << adapterSelector << L"\" " << WinUtils::Utf8ToWide(dns2) << L" index=2";
                 std::wstring cmdLine2 = L"netsh.exe " + cmd2.str();
                 std::vector<WCHAR> cmdLineBuf2(cmdLine2.begin(), cmdLine2.end());
                 cmdLineBuf2.push_back(L'\0');
@@ -113,7 +157,8 @@ bool DnsManager::RestoreDefaultDns(const std::string& interfaceGuid) {
     
     // Try Windows SDK API first
     GUID guid;
-    std::wstring guidWide = WinUtils::Utf8ToWide(interfaceGuid);
+    const std::string normalizedGuid = NormalizeGuid(interfaceGuid);
+    std::wstring guidWide = WinUtils::Utf8ToWide(normalizedGuid);
     HRESULT hr = CLSIDFromString(guidWide.c_str(), &guid);
     if (SUCCEEDED(hr)) {
         DNS_INTERFACE_SETTINGS settings = {0};
@@ -130,8 +175,11 @@ bool DnsManager::RestoreDefaultDns(const std::string& interfaceGuid) {
     }
     
     // Fallback to netsh
+    std::wstring adapterName = FindAdapterFriendlyName(interfaceGuid);
+    std::wstring adapterSelector = adapterName.empty() ? guidWide : adapterName;
+
     std::wstringstream cmd;
-    cmd << L"interface ip set dns \"" << guidWide << L"\" dhcp";
+    cmd << L"interface ipv4 set dnsservers name=\"" << adapterSelector << L"\" source=dhcp";
     
     STARTUPINFOW si = {0};
     si.cb = sizeof(si);

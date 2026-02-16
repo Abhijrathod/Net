@@ -110,8 +110,8 @@ NetworkList NetworkDiscovery::DiscoverAdapters() {
                 }
             }
             
-            // Only add enabled adapters
-            if (netAdapter.isEnabled) {
+            // Skip loopback adapters but keep disabled/disconnected adapters visible in UI.
+            if (adapter->IfType != IF_TYPE_SOFTWARE_LOOPBACK) {
                 list.adapters.push_back(netAdapter);
             }
             
