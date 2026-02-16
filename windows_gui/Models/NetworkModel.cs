@@ -13,7 +13,9 @@ namespace DNSChanger.Models
         public string DnsSecondary { get; set; } = string.Empty;
         public bool IsEnabled { get; set; }
         public bool IsConnected { get; set; }
-        
+
         public string StatusBadge => IsConnected ? "Connected" : "Disconnected";
+        public string AdapterState => IsEnabled ? "Enabled" : "Disabled";
+        public string DnsSummary => string.IsNullOrWhiteSpace(DnsSecondary) ? DnsPrimary : $"{DnsPrimary}, {DnsSecondary}";
     }
 }

@@ -210,11 +210,20 @@ namespace DNSChanger.ViewModels
         {
             StatusMessage = "Refreshing networks...";
             Networks = await _dnsService.GetNetworksAsync();
-            if (Networks.Count > 0 && SelectedNetwork == null)
+
+            if (Networks.Count > 0)
             {
-                SelectedNetwork = Networks[0];
+                SelectedNetwork = Networks.FirstOrDefault(n => n.IsConnected)
+                    ?? Networks.FirstOrDefault(n => n.IsEnabled)
+                    ?? Networks[0];
             }
-            StatusMessage = $"Found {Networks.Count} network(s)";
+            else
+            {
+                SelectedNetwork = null;
+            }
+
+            int connectedCount = Networks.Count(n => n.IsConnected);
+            StatusMessage = $"Found {Networks.Count} network(s), {connectedCount} connected";
         }
 
         private async Task RefreshDnsServersAsync()
@@ -349,6 +358,13 @@ namespace DNSChanger.ViewModels
             if (SelectedNetwork == null || SelectedDns == null)
                 return;
 
+            if (!SelectedNetwork.IsEnabled)
+            {
+                UiService.ShowError($"{SelectedNetwork.Name} is disabled. Enable the adapter and try again.");
+                StatusMessage = "Selected adapter is disabled";
+                return;
+            }
+
             // Check admin rights before attempting
             if (!AdminService.IsRunningAsAdministrator())
             {
@@ -393,6 +409,13 @@ namespace DNSChanger.ViewModels
         {
             if (SelectedNetwork == null)
                 return;
+
+            if (!SelectedNetwork.IsEnabled)
+            {
+                UiService.ShowError($"{SelectedNetwork.Name} is disabled. Enable the adapter and try again.");
+                StatusMessage = "Selected adapter is disabled";
+                return;
+            }
 
             // Check admin rights before attempting
             if (!AdminService.IsRunningAsAdministrator())
