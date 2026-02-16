@@ -40,11 +40,16 @@
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             <Grid>
-                <TextBlock Text="DNS Changer" 
-                          FontSize="24" 
-                          FontWeight="Bold"
-                          Foreground="{StaticResource ForegroundPrimaryBrush}"
-                          VerticalAlignment="Center"/>
+                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                    <TextBlock Text="DNS Changer" 
+                              FontSize="24" 
+                              FontWeight="Bold"
+                              Foreground="{StaticResource ForegroundPrimaryBrush}"/>
+                    <TextBlock Text="v2.1.0" 
+                              FontSize="11"
+                              Foreground="{StaticResource ForegroundSecondaryBrush}"
+                              Margin="0,2,0,0"/>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock Text="{Binding StatusMessage}" 
                               Foreground="{StaticResource ForegroundSecondaryBrush}"
@@ -76,14 +81,21 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     
                     <TextBlock Grid.Row="0" 
                               Text="Network Adapters" 
                               Style="{StaticResource HeaderText}"/>
+
+                    <TextBlock Grid.Row="1"
+                              Text="Connected adapters are prioritized automatically."
+                              Foreground="{StaticResource ForegroundSecondaryBrush}"
+                              FontSize="11"
+                              Margin="0,6,0,10"/>
                     
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                         <ListBox ItemsSource="{Binding Networks}"
                                 SelectedItem="{Binding SelectedNetwork}"
                                 Style="{StaticResource ModernListBox}"
@@ -108,21 +120,33 @@
                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
                                                   Opacity="0.6"
                                                   Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding DnsPrimary}" 
+                                        <TextBlock Text="{Binding DnsSummary}" 
                                                   FontSize="11"
                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
                                                   Opacity="0.6"
+                                                  TextTrimming="CharacterEllipsis"
                                                   Margin="0,2,0,0"/>
-                                        <Border Background="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" 
-                                               CornerRadius="10"
-                                               Padding="6,2"
-                                               HorizontalAlignment="Left"
-                                               Margin="0,4,0,0">
-                                            <TextBlock Text="{Binding StatusBadge}" 
-                                                      FontSize="10"
-                                                      Foreground="White"
-                                                      FontWeight="SemiBold"/>
-                                        </Border>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                            <Border Background="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" 
+                                                   CornerRadius="10"
+                                                   Padding="6,2"
+                                                   HorizontalAlignment="Left"
+                                                   Margin="0,0,6,0">
+                                                <TextBlock Text="{Binding StatusBadge}" 
+                                                          FontSize="10"
+                                                          Foreground="White"
+                                                          FontWeight="SemiBold"/>
+                                            </Border>
+                                            <Border Background="#50545B"
+                                                   CornerRadius="10"
+                                                   Padding="6,2"
+                                                   HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding AdapterState}" 
+                                                          FontSize="10"
+                                                          Foreground="White"
+                                                          FontWeight="SemiBold"/>
+                                            </Border>
+                                        </StackPanel>
                                     </StackPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>

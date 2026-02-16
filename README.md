@@ -30,6 +30,7 @@ A Windows desktop application for managing DNS servers across your network adapt
 ## Features
 
 - **Network discovery** — Detects adapters (Wi‑Fi, Ethernet, VPN, virtual)
+- **Adapter health badges** — Shows connected/disconnected and enabled/disabled state for each adapter
 - **DNS catalog** — 30+ providers (Google, Cloudflare, Quad9, OpenDNS, AdGuard, etc.)
 - **Custom DNS** — Add and manage your own servers
 - **Speed test** — Real DNS queries with latency, packet loss, and stability
@@ -101,3 +102,10 @@ This builds the C++ DLL, copies it to `windows_gui`, and builds the WPF applicat
 2. Download the latest **DNSChanger-Setup-x.x.x.exe**.
 3. Run the installer (UAC may prompt).
 4. Launch **DNS Changer** from the Start menu or desktop. Use **Run as administrator** when changing DNS.
+
+
+## Latest changes (v2.1.0)
+
+- Improved network adapter handling so disconnected adapters stay visible.
+- DNS apply/restore now protects users from applying changes to disabled adapters.
+- Updated UI with richer adapter status details and a version badge in the header.
