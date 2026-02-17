@@ -2,11 +2,14 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
 using DNSChanger.Models;
 using DNSChanger.Services;
 using DNSChanger.Views;
@@ -15,12 +18,17 @@ using System.Collections.Generic;
 
 namespace DNSChanger.ViewModels
 {
-    public class MainViewModel : INotifyPropertyChanged
+    public class MainViewModel : INotifyPropertyChanged, IDisposable
     {
+        private const int MaxSpeedSamples = 60;
+        private const double GraphWidth = 500;
+        private const double GraphHeight = 170;
+
         private readonly DnsService _dnsService = new DnsService();
         
         private ObservableCollection<NetworkModel> _networks = new();
         private ObservableCollection<DnsModel> _dnsServers = new();
+        private ObservableCollection<NetworkDriverModel> _networkDrivers = new();
         private NetworkModel? _selectedNetwork;
         private DnsModel? _selectedDns;
         private bool _isTesting;
@@ -33,6 +41,22 @@ namespace DNSChanger.ViewModels
         private AppSettings _settings;
         private List<DnsProfile> _profiles = new List<DnsProfile>();
         private string _selectedCategory = "All";
+        private DispatcherTimer? _networkMonitorTimer;
+        private string _activeDriverName = "Detecting...";
+        private string _activeDriverType = "-";
+        private string _activeDriverLinkSpeed = "-";
+        private double _currentDownloadMbps;
+        private double _currentUploadMbps;
+        private double _graphScaleMaxMbps = 10;
+        private PointCollection _downloadGraphPoints = new PointCollection();
+        private PointCollection _uploadGraphPoints = new PointCollection();
+        private readonly Queue<double> _downloadHistory = new Queue<double>();
+        private readonly Queue<double> _uploadHistory = new Queue<double>();
+        private string _lastMonitoredInterfaceId = string.Empty;
+        private long _lastBytesReceived;
+        private long _lastBytesSent;
+        private DateTime _lastMonitorTimestampUtc = DateTime.UtcNow;
+        private bool _hasBaselineSample;
 
         public ObservableCollection<DnsProfile> Profiles { get; set; } = new ObservableCollection<DnsProfile>();
 
@@ -53,6 +77,12 @@ namespace DNSChanger.ViewModels
             set { _networks = value; OnPropertyChanged(); }
         }
 
+        public ObservableCollection<NetworkDriverModel> NetworkDrivers
+        {
+            get => _networkDrivers;
+            set { _networkDrivers = value; OnPropertyChanged(); }
+        }
+
         public ObservableCollection<DnsModel> DnsServers
         {
             get => _dnsServers;
@@ -62,7 +92,12 @@ namespace DNSChanger.ViewModels
         public NetworkModel? SelectedNetwork
         {
             get => _selectedNetwork;
-            set { _selectedNetwork = value; OnPropertyChanged(); }
+            set
+            {
+                _selectedNetwork = value;
+                OnPropertyChanged();
+                ResetNetworkSpeedBaseline();
+            }
         }
 
         public DnsModel? SelectedDns
@@ -87,6 +122,75 @@ namespace DNSChanger.ViewModels
         {
             get => _statusMessage;
             set { _statusMessage = value; OnPropertyChanged(); }
+        }
+
+        public string ActiveDriverName
+        {
+            get => _activeDriverName;
+            set { _activeDriverName = value; OnPropertyChanged(); }
+        }
+
+        public string ActiveDriverType
+        {
+            get => _activeDriverType;
+            set { _activeDriverType = value; OnPropertyChanged(); }
+        }
+
+        public string ActiveDriverLinkSpeed
+        {
+            get => _activeDriverLinkSpeed;
+            set { _activeDriverLinkSpeed = value; OnPropertyChanged(); }
+        }
+
+        public double CurrentDownloadMbps
+        {
+            get => _currentDownloadMbps;
+            set
+            {
+                _currentDownloadMbps = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CurrentDownloadDisplay));
+            }
+        }
+
+        public double CurrentUploadMbps
+        {
+            get => _currentUploadMbps;
+            set
+            {
+                _currentUploadMbps = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CurrentUploadDisplay));
+            }
+        }
+
+        public string CurrentDownloadDisplay => $"{CurrentDownloadMbps:F2} Mbps";
+
+        public string CurrentUploadDisplay => $"{CurrentUploadMbps:F2} Mbps";
+
+        public double GraphScaleMaxMbps
+        {
+            get => _graphScaleMaxMbps;
+            set
+            {
+                _graphScaleMaxMbps = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(GraphScaleLabel));
+            }
+        }
+
+        public string GraphScaleLabel => $"{GraphScaleMaxMbps:F0} Mbps scale";
+
+        public PointCollection DownloadGraphPoints
+        {
+            get => _downloadGraphPoints;
+            set { _downloadGraphPoints = value; OnPropertyChanged(); }
+        }
+
+        public PointCollection UploadGraphPoints
+        {
+            get => _uploadGraphPoints;
+            set { _uploadGraphPoints = value; OnPropertyChanged(); }
         }
 
         public ICommand RefreshNetworksCommand { get; }
@@ -169,6 +273,8 @@ namespace DNSChanger.ViewModels
             _profiles = SettingsService.LoadProfiles();
             Profiles = new ObservableCollection<DnsProfile>(_profiles);
 
+            RefreshNetworkDrivers();
+            InitializeNetworkMonitor();
             _ = RefreshNetworksAsync();
             _ = RefreshDnsServersAsync();
         }
@@ -210,11 +316,12 @@ namespace DNSChanger.ViewModels
         {
             StatusMessage = "Refreshing networks...";
             Networks = await _dnsService.GetNetworksAsync();
+            RefreshNetworkDrivers();
             if (Networks.Count > 0 && SelectedNetwork == null)
             {
                 SelectedNetwork = Networks[0];
             }
-            StatusMessage = $"Found {Networks.Count} network(s)";
+            StatusMessage = $"Found {Networks.Count} network(s) and {NetworkDrivers.Count} driver(s)";
         }
 
         private async Task RefreshDnsServersAsync()
@@ -673,6 +780,243 @@ namespace DNSChanger.ViewModels
             {
                 UiService.ShowError($"Restore failed: {ex.Message}");
             }
+        }
+
+        private void InitializeNetworkMonitor()
+        {
+            _networkMonitorTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _networkMonitorTimer.Tick += OnNetworkMonitorTick;
+            _networkMonitorTimer.Start();
+            MonitorNetworkSpeed();
+        }
+
+        private void OnNetworkMonitorTick(object? sender, EventArgs e)
+        {
+            MonitorNetworkSpeed();
+        }
+
+        private void RefreshNetworkDrivers()
+        {
+            try
+            {
+                var drivers = NetworkInterface.GetAllNetworkInterfaces()
+                    .OrderByDescending(nic => nic.OperationalStatus == OperationalStatus.Up)
+                    .ThenBy(nic => nic.Name)
+                    .Select(nic => new NetworkDriverModel
+                    {
+                        InterfaceId = nic.Id,
+                        Name = nic.Name,
+                        Description = nic.Description,
+                        Type = nic.NetworkInterfaceType.ToString(),
+                        Status = nic.OperationalStatus.ToString(),
+                        LinkSpeedDisplay = FormatLinkSpeed(nic.Speed),
+                        IsUp = nic.OperationalStatus == OperationalStatus.Up
+                    });
+
+                NetworkDrivers = new ObservableCollection<NetworkDriverModel>(drivers);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to refresh network drivers: {ex.Message}");
+            }
+        }
+
+        private void MonitorNetworkSpeed()
+        {
+            try
+            {
+                var interfaceToMonitor = ResolveInterfaceToMonitor();
+                if (interfaceToMonitor == null)
+                {
+                    ActiveDriverName = "No active interface";
+                    ActiveDriverType = "-";
+                    ActiveDriverLinkSpeed = "-";
+                    CurrentDownloadMbps = 0;
+                    CurrentUploadMbps = 0;
+                    UpdateSpeedGraph(0, 0);
+                    ResetNetworkSpeedBaseline();
+                    return;
+                }
+
+                ActiveDriverName = interfaceToMonitor.Name;
+                ActiveDriverType = interfaceToMonitor.NetworkInterfaceType.ToString();
+                ActiveDriverLinkSpeed = FormatLinkSpeed(interfaceToMonitor.Speed);
+
+                var stats = interfaceToMonitor.GetIPv4Statistics();
+                var nowUtc = DateTime.UtcNow;
+                var isInterfaceChanged = !string.Equals(_lastMonitoredInterfaceId, interfaceToMonitor.Id, StringComparison.OrdinalIgnoreCase);
+
+                if (!_hasBaselineSample || isInterfaceChanged)
+                {
+                    _lastMonitoredInterfaceId = interfaceToMonitor.Id;
+                    _lastBytesReceived = stats.BytesReceived;
+                    _lastBytesSent = stats.BytesSent;
+                    _lastMonitorTimestampUtc = nowUtc;
+                    _hasBaselineSample = true;
+                    CurrentDownloadMbps = 0;
+                    CurrentUploadMbps = 0;
+                    UpdateSpeedGraph(0, 0);
+                    return;
+                }
+
+                var elapsedSeconds = (nowUtc - _lastMonitorTimestampUtc).TotalSeconds;
+                if (elapsedSeconds <= 0.01)
+                {
+                    return;
+                }
+
+                var bytesReceivedDelta = stats.BytesReceived - _lastBytesReceived;
+                var bytesSentDelta = stats.BytesSent - _lastBytesSent;
+                if (bytesReceivedDelta < 0) bytesReceivedDelta = 0;
+                if (bytesSentDelta < 0) bytesSentDelta = 0;
+
+                var downloadMbps = (bytesReceivedDelta * 8d) / elapsedSeconds / 1_000_000d;
+                var uploadMbps = (bytesSentDelta * 8d) / elapsedSeconds / 1_000_000d;
+
+                CurrentDownloadMbps = downloadMbps;
+                CurrentUploadMbps = uploadMbps;
+                UpdateSpeedGraph(downloadMbps, uploadMbps);
+
+                _lastBytesReceived = stats.BytesReceived;
+                _lastBytesSent = stats.BytesSent;
+                _lastMonitorTimestampUtc = nowUtc;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Network speed monitor failed: {ex.Message}");
+            }
+        }
+
+        private NetworkInterface? ResolveInterfaceToMonitor()
+        {
+            var activeInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(nic =>
+                    nic.OperationalStatus == OperationalStatus.Up &&
+                    nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                .ToList();
+
+            if (activeInterfaces.Count == 0)
+            {
+                return null;
+            }
+
+            if (SelectedNetwork != null)
+            {
+                var selectedId = NormalizeInterfaceId(SelectedNetwork.Guid);
+                if (!string.IsNullOrWhiteSpace(selectedId))
+                {
+                    var byId = activeInterfaces.FirstOrDefault(nic => NormalizeInterfaceId(nic.Id) == selectedId);
+                    if (byId != null)
+                    {
+                        return byId;
+                    }
+                }
+
+                var byName = activeInterfaces.FirstOrDefault(nic =>
+                    nic.Name.Equals(SelectedNetwork.Name, StringComparison.OrdinalIgnoreCase));
+                if (byName != null)
+                {
+                    return byName;
+                }
+            }
+
+            return activeInterfaces.OrderByDescending(nic => nic.Speed).FirstOrDefault();
+        }
+
+        private void ResetNetworkSpeedBaseline()
+        {
+            _hasBaselineSample = false;
+            _lastMonitoredInterfaceId = string.Empty;
+        }
+
+        private void UpdateSpeedGraph(double downloadMbps, double uploadMbps)
+        {
+            _downloadHistory.Enqueue(downloadMbps);
+            _uploadHistory.Enqueue(uploadMbps);
+
+            while (_downloadHistory.Count > MaxSpeedSamples)
+            {
+                _downloadHistory.Dequeue();
+            }
+
+            while (_uploadHistory.Count > MaxSpeedSamples)
+            {
+                _uploadHistory.Dequeue();
+            }
+
+            var maxObserved = Math.Max(
+                10,
+                Math.Max(_downloadHistory.DefaultIfEmpty(0).Max(), _uploadHistory.DefaultIfEmpty(0).Max()) * 1.25);
+
+            GraphScaleMaxMbps = Math.Ceiling(maxObserved);
+            DownloadGraphPoints = BuildSpeedGraphPoints(_downloadHistory, GraphScaleMaxMbps);
+            UploadGraphPoints = BuildSpeedGraphPoints(_uploadHistory, GraphScaleMaxMbps);
+        }
+
+        private static PointCollection BuildSpeedGraphPoints(IEnumerable<double> values, double maxScaleMbps)
+        {
+            var snapshot = values.ToList();
+            var points = new PointCollection(snapshot.Count);
+            if (snapshot.Count == 0)
+            {
+                return points;
+            }
+
+            var safeScale = maxScaleMbps <= 0 ? 1 : maxScaleMbps;
+            var stepX = snapshot.Count == 1 ? GraphWidth : GraphWidth / (snapshot.Count - 1);
+
+            for (int index = 0; index < snapshot.Count; index++)
+            {
+                var normalizedValue = Math.Clamp(snapshot[index] / safeScale, 0, 1);
+                var x = index * stepX;
+                var y = GraphHeight - (normalizedValue * GraphHeight);
+                points.Add(new Point(x, y));
+            }
+
+            return points;
+        }
+
+        private static string FormatLinkSpeed(long bitsPerSecond)
+        {
+            if (bitsPerSecond <= 0)
+            {
+                return "-";
+            }
+
+            var mbps = bitsPerSecond / 1_000_000d;
+            if (mbps >= 1000)
+            {
+                return $"{mbps / 1000d:F1} Gbps";
+            }
+
+            return $"{mbps:F0} Mbps";
+        }
+
+        private static string NormalizeInterfaceId(string? interfaceId)
+        {
+            if (string.IsNullOrWhiteSpace(interfaceId))
+            {
+                return string.Empty;
+            }
+
+            return interfaceId.Trim().Trim('{', '}').ToUpperInvariant();
+        }
+
+        public void Dispose()
+        {
+            if (_networkMonitorTimer != null)
+            {
+                _networkMonitorTimer.Stop();
+                _networkMonitorTimer.Tick -= OnNetworkMonitorTick;
+                _networkMonitorTimer = null;
+            }
+
+            _testCancellation?.Cancel();
+            _testCancellation?.Dispose();
+            _testCancellation = null;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

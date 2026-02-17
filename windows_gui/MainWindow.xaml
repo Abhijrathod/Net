@@ -5,11 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:DNSChanger.ViewModels"
         xmlns:conv="clr-namespace:DNSChanger.Converters"
-        xmlns:views="clr-namespace:DNSChanger.Views"
         mc:Ignorable="d"
         Title="DNS Changer" 
-        Height="700" 
-        Width="1200"
+        Height="760" 
+        Width="1320"
+        MinWidth="1180"
+        MinHeight="700"
         Background="{StaticResource BackgroundDarkBrush}"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize">
@@ -40,11 +41,17 @@
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             <Grid>
-                <TextBlock Text="DNS Changer" 
-                          FontSize="24" 
-                          FontWeight="Bold"
-                          Foreground="{StaticResource ForegroundPrimaryBrush}"
-                          VerticalAlignment="Center"/>
+                <StackPanel>
+                    <TextBlock Text="Network DNS Control Center"
+                              FontSize="24"
+                              FontWeight="Bold"
+                              Foreground="{StaticResource ForegroundPrimaryBrush}"
+                              VerticalAlignment="Center"/>
+                    <TextBlock Text="DNS profiles + live internet speed graph + adapter drivers"
+                              FontSize="12"
+                              Foreground="{StaticResource ForegroundSecondaryBrush}"
+                              Margin="0,4,0,0"/>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock Text="{Binding StatusMessage}" 
                               Foreground="{StaticResource ForegroundSecondaryBrush}"
@@ -53,7 +60,9 @@
                     <Button Content="Refresh Networks" 
                            Command="{Binding RefreshNetworksCommand}"
                            Style="{StaticResource ModernButton}"
-                           Margin="0,0,8,0"/>
+                           Width="140"
+                           Height="34"
+                           Padding="8,4"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -61,7 +70,7 @@
         <!-- Main Content -->
         <Grid Grid.Row="1" Margin="20">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="340"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             
@@ -76,58 +85,85 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="2.4*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="1.6*"/>
                     </Grid.RowDefinitions>
                     
                     <TextBlock Grid.Row="0" 
                               Text="Network Adapters" 
-                              Style="{StaticResource HeaderText}"/>
+                              Style="{StaticResource HeaderText}"
+                              Margin="0,0,0,8"/>
                     
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <ListBox ItemsSource="{Binding Networks}"
-                                SelectedItem="{Binding SelectedNetwork}"
-                                Style="{StaticResource ModernListBox}"
-                                BorderThickness="0">
-                            <ListBox.ItemContainerStyle>
-                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource ModernListBoxItem}"/>
-                            </ListBox.ItemContainerStyle>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Margin="8">
-                                        <TextBlock Text="{Binding Name}" 
-                                                  FontWeight="SemiBold"
-                                                  FontSize="14"
-                                                  Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/>
-                                        <TextBlock Text="{Binding Type}" 
-                                                  FontSize="12"
-                                                  Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                                  Opacity="0.7"
-                                                  Margin="0,4,0,0"/>
-                                        <TextBlock Text="{Binding IpAddress}" 
-                                                  FontSize="11"
-                                                  Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                                  Opacity="0.6"
-                                                  Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding DnsPrimary}" 
-                                                  FontSize="11"
-                                                  Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                                  Opacity="0.6"
-                                                  Margin="0,2,0,0"/>
-                                        <Border Background="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" 
-                                               CornerRadius="10"
-                                               Padding="6,2"
-                                               HorizontalAlignment="Left"
-                                               Margin="0,4,0,0">
-                                            <TextBlock Text="{Binding StatusBadge}" 
-                                                      FontSize="10"
-                                                      Foreground="White"
-                                                      FontWeight="SemiBold"/>
-                                        </Border>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </ScrollViewer>
+                    <ListBox Grid.Row="1"
+                            ItemsSource="{Binding Networks}"
+                            SelectedItem="{Binding SelectedNetwork}"
+                            Style="{StaticResource ModernListBox}"
+                            BorderThickness="0">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource ModernListBoxItem}"/>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="4">
+                                    <TextBlock Text="{Binding Name}" 
+                                              FontWeight="SemiBold"
+                                              FontSize="13"
+                                              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/>
+                                    <TextBlock Text="{Binding Type}" 
+                                              FontSize="11"
+                                              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                              Opacity="0.75"
+                                              Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding IpAddress}" 
+                                              FontSize="11"
+                                              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                              Opacity="0.65"
+                                              Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding DnsPrimary}" 
+                                              FontSize="11"
+                                              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                              Opacity="0.65"
+                                              Margin="0,2,0,0"/>
+                                    <Border Background="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" 
+                                           CornerRadius="10"
+                                           Padding="6,2"
+                                           HorizontalAlignment="Left"
+                                           Margin="0,4,0,0">
+                                        <TextBlock Text="{Binding StatusBadge}" 
+                                                  FontSize="10"
+                                                  Foreground="White"
+                                                  FontWeight="SemiBold"/>
+                                    </Border>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Border Grid.Row="2"
+                            Height="1"
+                            Background="{StaticResource BorderBrush}"
+                            Margin="0,12,0,10"/>
+
+                    <TextBlock Grid.Row="3"
+                              Text="Network Drivers"
+                              Style="{StaticResource HeaderText}"
+                              Margin="0,0,0,8"/>
+
+                    <DataGrid Grid.Row="4"
+                              ItemsSource="{Binding NetworkDrivers}"
+                              Style="{StaticResource ModernDataGrid}"
+                              IsReadOnly="True"
+                              CanUserSortColumns="True"
+                              BorderThickness="0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Driver" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="92"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="84"/>
+                            <DataGridTextColumn Header="Link" Binding="{Binding LinkSpeedDisplay}" Width="92"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
                 </Grid>
             </Border>
             
@@ -140,6 +176,7 @@
                    Padding="16">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -249,16 +286,109 @@
                                    Padding="8,4"/>
                         </StackPanel>
                     </Grid>
+
+                    <Border Grid.Row="1"
+                           Background="{StaticResource BackgroundMediumBrush}"
+                           BorderBrush="{StaticResource BorderBrush}"
+                           BorderThickness="1"
+                           CornerRadius="8"
+                           Padding="12"
+                           Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="Live Network Monitor"
+                                          FontSize="16"
+                                          FontWeight="Bold"
+                                          Foreground="{StaticResource ForegroundPrimaryBrush}"/>
+                                <TextBlock Text="{Binding ActiveDriverName}"
+                                          FontSize="13"
+                                          Foreground="{StaticResource ForegroundPrimaryBrush}"
+                                          Margin="0,8,0,0"/>
+                                <TextBlock Text="{Binding ActiveDriverType}"
+                                          FontSize="11"
+                                          Foreground="{StaticResource ForegroundSecondaryBrush}"
+                                          Margin="0,2,0,0"/>
+                                <TextBlock Text="{Binding ActiveDriverLinkSpeed}"
+                                          FontSize="11"
+                                          Foreground="{StaticResource ForegroundSecondaryBrush}"
+                                          Margin="0,2,0,8"/>
+
+                                <Border Background="#24384B" CornerRadius="6" Padding="10" Margin="0,2,0,8">
+                                    <StackPanel>
+                                        <TextBlock Text="Download"
+                                                  FontSize="11"
+                                                  Foreground="#7FBCE8"/>
+                                        <TextBlock Text="{Binding CurrentDownloadDisplay}"
+                                                  FontSize="20"
+                                                  FontWeight="Bold"
+                                                  Foreground="#6CC6FF"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="#2E3F2E" CornerRadius="6" Padding="10">
+                                    <StackPanel>
+                                        <TextBlock Text="Upload"
+                                                  FontSize="11"
+                                                  Foreground="#9ACB8A"/>
+                                        <TextBlock Text="{Binding CurrentUploadDisplay}"
+                                                  FontSize="20"
+                                                  FontWeight="Bold"
+                                                  Foreground="#79E39B"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1">
+                                <DockPanel Margin="0,0,0,8">
+                                    <TextBlock Text="Internet Speed Graph"
+                                              FontSize="13"
+                                              FontWeight="SemiBold"
+                                              Foreground="{StaticResource ForegroundPrimaryBrush}"
+                                              DockPanel.Dock="Left"/>
+                                    <TextBlock Text="{Binding GraphScaleLabel}"
+                                              FontSize="11"
+                                              Foreground="{StaticResource ForegroundSecondaryBrush}"
+                                              DockPanel.Dock="Right"/>
+                                </DockPanel>
+
+                                <Border Background="#1A1A1A"
+                                       BorderBrush="{StaticResource BorderBrush}"
+                                       BorderThickness="1"
+                                       CornerRadius="6"
+                                       Padding="8">
+                                    <Canvas Width="500" Height="170">
+                                        <Line X1="0" Y1="42.5" X2="500" Y2="42.5" Stroke="#2D3A41" StrokeThickness="1"/>
+                                        <Line X1="0" Y1="85" X2="500" Y2="85" Stroke="#2D3A41" StrokeThickness="1"/>
+                                        <Line X1="0" Y1="127.5" X2="500" Y2="127.5" Stroke="#2D3A41" StrokeThickness="1"/>
+                                        <Polyline Points="{Binding DownloadGraphPoints}" Stroke="#5BC0FF" StrokeThickness="2.2" StrokeLineJoin="Round"/>
+                                        <Polyline Points="{Binding UploadGraphPoints}" Stroke="#7EE081" StrokeThickness="2.2" StrokeLineJoin="Round"/>
+                                    </Canvas>
+                                </Border>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Ellipse Fill="#5BC0FF" Width="9" Height="9" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Download" Foreground="{StaticResource ForegroundSecondaryBrush}" FontSize="11" Margin="0,0,16,0"/>
+                                    <Ellipse Fill="#7EE081" Width="9" Height="9" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Upload" Foreground="{StaticResource ForegroundSecondaryBrush}" FontSize="11"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                     
                     <!-- Progress Bar -->
-                    <ProgressBar Grid.Row="1"
+                    <ProgressBar Grid.Row="2"
                                  Value="{Binding TestProgress}"
                                  Maximum="100"
                                  Style="{StaticResource ModernProgressBar}"
                                  Visibility="{Binding IsTesting, Converter={StaticResource BoolToVisibilityConverter}}"
                                  Margin="0,0,0,12"/>
                     
-                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
                         <DataGrid ItemsSource="{Binding DnsServers}"
                                  SelectedItem="{Binding SelectedDns}"
                                  Style="{StaticResource ModernDataGrid}"

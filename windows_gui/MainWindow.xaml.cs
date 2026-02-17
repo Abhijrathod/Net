@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using DNSChanger.ViewModels;
+using System;
 
 namespace DNSChanger
 {
@@ -17,6 +18,16 @@ namespace DNSChanger
             {
                 vm.SelectedDns = dg.SelectedItem as Models.DnsModel;
             }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            if (DataContext is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            base.OnClosed(e);
         }
     }
 }
